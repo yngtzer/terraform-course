@@ -1,0 +1,76 @@
+- name: Install Code Server
+  hosts: my_instance
+  tasks:
+  - name: Create directory
+    file:
+      path: ~/code-server
+      state: directory
+
+  - name: Download tar
+    get_url:
+      url: https://github.com/coder/code-server/releases/download/v4.2.0/code-server-4.2.0-linux-amd64.tar.gz
+      dest: ~/code-server/code-server-4.2.0-linux-amd64.tar.gz
+
+  - name: Extract tar
+    unarchive:
+      src: ~/code-server/code-server-4.2.0-linux-amd64.tar.gz
+      dest: ~/code-server
+      remote_src: yes
+  
+  - name: Create code server directory in /usr
+    file:
+      path: /usr/lib/code-server
+      state: directory
+
+  - name: Copy tar content
+    copy:
+      src: ~/code-server/code-server-4.2.0-linux-amd64/
+      dest: /usr/lib/code-server/
+      remote_src: yes
+
+  - name: Create a symbolic link
+    file:
+      src: /usr/lib/code-server/bin/code-server
+      dest: /usr/bin/code-server
+      state: link
+
+  - name: Create directory
+    file:
+      path: /var/lib/code-server
+      state: directory
+
+  - name: Generate service file
+    template:
+      src: code-server.service.j2
+      dest: /lib/systemd/system/code-server.service
+
+  - name: Start and enable code-server.service
+    systemd:
+      name: code-server
+      daemon_reload: true
+      enabled: true
+      state: restarted
+
+  - name: Install Nginx
+    apt: name=nginx state=latest
+  
+  - name: Generate service file
+    template:
+      src: code-server.conf.j2
+      dest: /etc/nginx/sites-available/code-server.conf
+
+  - name: Create a symbolic link
+    file:
+      src: /etc/nginx/sites-available/code-server.conf
+      dest: /etc/nginx/sites-enabled/code-server.conf
+      state: link
+
+  - name: Test Nginx validity
+    command: nginx -t
+
+  - name: Start and enable nginx
+    systemd:
+      name: nginx
+      daemon_reload: true
+      enabled: true
+      state: restarted
