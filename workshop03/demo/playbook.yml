@@ -1,0 +1,17 @@
+- name: Install Nginx
+  hosts: default
+  become: true
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 86400 
+  - name: Install Nginx
+    apt: name=nginx state=latest
+  - name: Start and enable nginx
+    systemd:
+      name: nginx
+      daemon_reload: true
+      enabled: true
+      state: restarted
